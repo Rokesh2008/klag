@@ -39,6 +39,8 @@ public class MicrometerReporter {
 
   private final MeterRegistry registry;
   private final boolean memberLabelsEnabled;
+  private final String clusterName;
+  private final boolean closeRegistryOnStop;
   /** Gauge value + registered meter, keyed by {@code name + tags.toString()}. */
   private final Map<String, HeldGauge> gauges = new ConcurrentHashMap<>();
   private final Set<String> markedForDeletion = ConcurrentHashMap.newKeySet();
@@ -55,8 +57,22 @@ public class MicrometerReporter {
   }
 
   public MicrometerReporter(MeterRegistry registry, boolean memberLabelsEnabled) {
+    this(registry, memberLabelsEnabled, "", true);
+  }
+
+  /**
+   * @param clusterName when non-blank, prepended as {@code cluster_name} on Kafka series
+   * @param closeRegistryOnStop false when several reporters share one Prometheus registry
+   */
+  public MicrometerReporter(
+      MeterRegistry registry,
+      boolean memberLabelsEnabled,
+      String clusterName,
+      boolean closeRegistryOnStop) {
     this.registry = registry;
     this.memberLabelsEnabled = memberLabelsEnabled;
+    this.clusterName = clusterName == null ? "" : clusterName;
+    this.closeRegistryOnStop = closeRegistryOnStop;
   }
 
   /**
@@ -96,7 +112,7 @@ public class MicrometerReporter {
         a[2] = Math.min(a[2], p.lag());
       }
       for (var e : topicAgg.entrySet()) {
-        Tags topicTags = Tags.of("consumer_group", group.consumerGroup(), "topic", e.getKey());
+        Tags topicTags = metricTags("consumer_group", group.consumerGroup(), "topic", e.getKey());
         long[] a = e.getValue();
         trackKey(activeKeys, recordGauge("klag.consumer.lag.sum", topicTags, a[0]));
         trackKey(activeKeys, recordGauge("klag.consumer.lag.max", topicTags, a[1]));
@@ -106,7 +122,7 @@ public class MicrometerReporter {
       // Per-partition metrics
       for (PartitionLag p : group.partitions()) {
         TopicPartitionKey key = new TopicPartitionKey(p.topic(), p.partition());
-        Tags partitionTags = Tags.of(
+        Tags partitionTags = metricTags(
           "consumer_group", group.consumerGroup(),
           "topic", p.topic(),
           "partition", String.valueOf(p.partition())
@@ -170,7 +186,7 @@ public class MicrometerReporter {
    */
   public void reportTopicPartitions(Map<String, Integer> topicPartitions, Set<String> activeKeys) {
     for (var entry : topicPartitions.entrySet()) {
-      Tags tags = Tags.of("topic", entry.getKey());
+      Tags tags = metricTags("topic", entry.getKey());
       trackKey(activeKeys, recordGauge("klag.topic.partitions", tags, entry.getValue()));
     }
   }
@@ -195,7 +211,7 @@ public class MicrometerReporter {
 
     for (ConsumerGroupState groupState : stateData.values()) {
       long changeCount = stateTracker.recordState(groupState.groupId(), groupState.state());
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", groupState.groupId(),
         "state", groupState.state().toMetricValue()
       );
@@ -239,7 +255,7 @@ public class MicrometerReporter {
     log.debug("Reporting velocity metrics for {} consumer-group/topic pairs", velocities.size());
 
     for (LagVelocity velocity : velocities) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", velocity.consumerGroup(),
         "topic", velocity.topic()
       );
@@ -261,7 +277,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} hot partition lag metrics", hotPartitions.size());
 
     for (HotPartitionLag hot : hotPartitions) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", hot.consumerGroup(),
         "topic", hot.topic(),
         "partition", String.valueOf(hot.partition())
@@ -282,7 +298,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} hot partition throughput metrics", hotPartitions.size());
 
     for (HotPartitionThroughput hot : hotPartitions) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "topic", hot.topic(),
         "partition", String.valueOf(hot.partition())
       );
@@ -305,7 +321,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} under-replicated partition metrics", partitions.size());
 
     for (UnderReplicatedPartition u : partitions) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "topic", u.topic(),
         "partition", String.valueOf(u.partition())
       );
@@ -358,7 +374,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} lag_ms metrics", lagMsData.size());
 
     for (LagMs lagMs : lagMsData) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", lagMs.consumerGroup(),
         "topic", lagMs.topic()
       );
@@ -388,7 +404,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} time-to-close estimates", estimates.size());
 
     for (TimeToCloseEstimate estimate : estimates) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", estimate.consumerGroup(),
         "topic", estimate.topic()
       );
@@ -408,7 +424,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} retention risk metrics", risks.size());
 
     for (RetentionRisk risk : risks) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", risk.consumerGroup(),
         "topic", risk.topic()
       );
@@ -434,7 +450,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} commit staleness metrics", stalenessData.size());
 
     for (CommitStaleness staleness : stalenessData) {
-      Tags tags = Tags.of(
+      Tags tags = metricTags(
         "consumer_group", staleness.consumerGroup(),
         "topic", staleness.topic()
       );
@@ -450,10 +466,22 @@ public class MicrometerReporter {
 
   public Future<Void> close() {
     log.info("Closing MicrometerReporter");
-    if (registry != null) {
+    for (String key : new HashSet<>(gauges.keySet())) {
+      removeGauge(key);
+    }
+    markedForDeletion.clear();
+    if (closeRegistryOnStop && registry != null) {
       registry.close();
     }
     return Future.succeededFuture();
+  }
+
+  private Tags metricTags(String... keyValues) {
+    Tags tags = Tags.of(keyValues);
+    if (clusterName.isBlank()) {
+      return tags;
+    }
+    return Tags.of("cluster_name", clusterName).and(tags);
   }
 
   /**

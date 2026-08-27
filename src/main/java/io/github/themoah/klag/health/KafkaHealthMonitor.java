@@ -20,6 +20,7 @@ public class KafkaHealthMonitor {
   private final Vertx vertx;
   private final KafkaClientService kafkaClient;
   private final long heartbeatIntervalMs;
+  private final String clusterName;
   private final AtomicReference<HealthStatus> kafkaStatus;
 
   private Long timerId;
@@ -32,10 +33,23 @@ public class KafkaHealthMonitor {
   }
 
   public KafkaHealthMonitor(Vertx vertx, KafkaClientService kafkaClient, long heartbeatIntervalMs) {
+    this(vertx, kafkaClient, heartbeatIntervalMs, null);
+  }
+
+  public KafkaHealthMonitor(
+      Vertx vertx, KafkaClientService kafkaClient, long heartbeatIntervalMs, String clusterName) {
     this.vertx = vertx;
     this.kafkaClient = kafkaClient;
     this.heartbeatIntervalMs = heartbeatIntervalMs;
+    this.clusterName = clusterName;
     this.kafkaStatus = new AtomicReference<>(HealthStatus.DOWN);
+  }
+
+  /**
+   * Optional {@code cluster_name} this monitor belongs to; null when unnamed.
+   */
+  public String clusterName() {
+    return clusterName;
   }
 
   /**

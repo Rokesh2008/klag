@@ -1,0 +1,8 @@
+# Two Kafka clusters in one Klag process
+kafka:
+  clusters:
+    - name: msk-a
+      bootstrapServers: "a.example.com:9092"
+    - name: msk-b
+      bootstrapServers: "b.example.com:9092"
+      groupFilter: "app-*"
