@@ -19,6 +19,7 @@ resolve in this order: environment variable `NAME` → `-DNAME` → dotted
 `-Dname.dotted` (for example, `HTTP_PORT` → `-Dhttp.port=8881`). They are:
 
 - `HTTP_PORT`, `KAFKA_HEALTH_CHECK_INTERVAL_MS`
+- `KAFKA_CLUSTER_NAME`, `KAFKA_CLUSTERS`
 - `KAFKA_CHUNK_COUNT`, `KAFKA_CHUNK_DELAY_MS`
 - `METRICS_REPORTER`, `METRICS_INTERVAL_MS`, `METRICS_GROUP_FILTER`,
   `METRICS_GROUP_EXCLUDE`, `METRICS_JVM_ENABLED`,

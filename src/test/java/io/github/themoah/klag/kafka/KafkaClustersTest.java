@@ -9,7 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 class KafkaClustersTest {
 
@@ -146,6 +149,83 @@ class KafkaClustersTest {
     KafkaClientConfig defaults = KafkaClientConfig.fromEnvironment(Map.of());
 
     assertEquals(45000, KafkaClusters.load(env, defaults).get(0).clientConfig().getRequestTimeoutMs());
+  }
+
+  @Test
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
+  void jvmExactPropertySuppliesClusterNameWhenEnvUnset() {
+    Assumptions.assumeTrue(envUnset(KafkaClusters.ENV_CLUSTER_NAME));
+    Assumptions.assumeTrue(envUnset(KafkaClusters.ENV_CLUSTERS),
+      "process KAFKA_CLUSTERS would take precedence over a JVM cluster name");
+    String exact = KafkaClusters.ENV_CLUSTER_NAME;
+    String dotted = "kafka.cluster.name";
+    String previousExact = System.getProperty(exact);
+    String previousDotted = System.getProperty(dotted);
+    try {
+      System.clearProperty(dotted);
+      System.setProperty(exact, "from-d");
+      Map<String, String> settings = KafkaClusters.processSettings(Map.of());
+      KafkaClientConfig defaults = KafkaClientConfig.fromEnvironment(Map.of());
+      assertEquals("from-d", KafkaClusters.load(settings, defaults).get(0).name());
+    } finally {
+      restoreProperty(exact, previousExact);
+      restoreProperty(dotted, previousDotted);
+    }
+  }
+
+  @Test
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
+  void dottedJvmPropertySuppliesClustersJsonWhenEnvUnset() {
+    Assumptions.assumeTrue(envUnset(KafkaClusters.ENV_CLUSTERS));
+    Assumptions.assumeTrue(envUnset(KafkaClusters.ENV_CLUSTER_NAME));
+    String exact = KafkaClusters.ENV_CLUSTERS;
+    String dotted = "kafka.clusters";
+    String previousExact = System.getProperty(exact);
+    String previousDotted = System.getProperty(dotted);
+    try {
+      System.clearProperty(exact);
+      System.setProperty(dotted,
+        "[{\"name\":\"from-dotted\",\"bootstrapServers\":\"d:9092\"}]");
+      Map<String, String> settings = KafkaClusters.processSettings(Map.of());
+      KafkaClientConfig defaults = KafkaClientConfig.fromEnvironment(Map.of());
+      List<KafkaClusterSpec> clusters = KafkaClusters.load(settings, defaults);
+      assertEquals(1, clusters.size());
+      assertEquals("from-dotted", clusters.get(0).name());
+      assertEquals("d:9092", clusters.get(0).clientConfig().getBootstrapServers());
+    } finally {
+      restoreProperty(exact, previousExact);
+      restoreProperty(dotted, previousDotted);
+    }
+  }
+
+  @Test
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
+  void envMapWinsOverJvmPropertyForClusterName() {
+    Assumptions.assumeTrue(envUnset(KafkaClusters.ENV_CLUSTERS),
+      "process KAFKA_CLUSTERS would ignore the injected cluster name");
+    String previous = System.getProperty(KafkaClusters.ENV_CLUSTER_NAME);
+    try {
+      System.setProperty(KafkaClusters.ENV_CLUSTER_NAME, "from-d");
+      Map<String, String> settings = KafkaClusters.processSettings(
+        Map.of(KafkaClusters.ENV_CLUSTER_NAME, "from-env"));
+      KafkaClientConfig defaults = KafkaClientConfig.fromEnvironment(Map.of());
+      assertEquals("from-env", KafkaClusters.load(settings, defaults).get(0).name());
+    } finally {
+      restoreProperty(KafkaClusters.ENV_CLUSTER_NAME, previous);
+    }
+  }
+
+  private static boolean envUnset(String name) {
+    String value = System.getenv(name);
+    return value == null || value.isBlank();
+  }
+
+  private static void restoreProperty(String name, String value) {
+    if (value == null) {
+      System.clearProperty(name);
+    } else {
+      System.setProperty(name, value);
+    }
   }
 
   @Test

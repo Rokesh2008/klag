@@ -1,8 +1,10 @@
 package io.github.themoah.klag.kafka;
 
+import io.github.themoah.klag.config.Env;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,7 +18,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>When {@code KAFKA_CLUSTERS} is a JSON array, each object is one cluster.
  * Otherwise a single cluster is built from {@link KafkaClientConfig#load()} plus
- * optional {@code KAFKA_CLUSTER_NAME}.
+ * optional {@code KAFKA_CLUSTER_NAME}. Both settings are {@link Env}-backed
+ * (env var, then {@code -DNAME}, then dotted {@code -Dname.dotted}).
  */
 public final class KafkaClusters {
 
@@ -28,7 +31,30 @@ public final class KafkaClusters {
   private KafkaClusters() {}
 
   public static List<KafkaClusterSpec> load() {
-    return load(System.getenv(), KafkaClientConfig.load());
+    return load(processSettings(System.getenv()), KafkaClientConfig.load());
+  }
+
+  /**
+   * Overlays {@link Env} resolution for {@code KAFKA_CLUSTERS} and
+   * {@code KAFKA_CLUSTER_NAME} onto a copy of {@code env}. Env-var values already
+   * in the map win; otherwise {@code -DNAME} / dotted JVM properties apply.
+   */
+  static Map<String, String> processSettings(Map<String, String> env) {
+    Map<String, String> settings = new HashMap<>(env);
+    overlayEnv(settings, ENV_CLUSTERS);
+    overlayEnv(settings, ENV_CLUSTER_NAME);
+    return settings;
+  }
+
+  private static void overlayEnv(Map<String, String> settings, String name) {
+    String existing = settings.get(name);
+    if (existing != null && !existing.isBlank()) {
+      return;
+    }
+    String resolved = Env.getString(name, null);
+    if (resolved != null) {
+      settings.put(name, resolved);
+    }
   }
 
   static List<KafkaClusterSpec> load(Map<String, String> env, KafkaClientConfig defaults) {
