@@ -114,6 +114,7 @@ validate_output "KAFKA_BOOTSTRAP_SERVERS env var" "${TESTS_DIR}/test-values.yaml
 # Multi-cluster Kafka
 validate_output "KAFKA_CLUSTERS env var" "${TESTS_DIR}/test-values-clusters.yaml" "KAFKA_CLUSTERS"
 validate_output "cluster names in KAFKA_CLUSTERS" "${TESTS_DIR}/test-values-clusters.yaml" "msk-a"
+validate_not_present "No KAFKA_CLUSTER_NAME when clusters is set" "${TESTS_DIR}/test-values-clusters.yaml" "KAFKA_CLUSTER_NAME"
 validate_not_present "No KAFKA_CLUSTERS by default" "" "KAFKA_CLUSTERS"
 validate_output "METRICS_REPORTER env var" "${TESTS_DIR}/test-values.yaml" "METRICS_REPORTER"
 

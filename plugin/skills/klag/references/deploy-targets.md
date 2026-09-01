@@ -82,6 +82,7 @@ Values worth setting on a real install:
 | `mcp.enabled: true` + `mcp.existingSecret` | expose `/mcp` for agents |
 | `kafka.existingSecret` | JAAS config + truststore password, never inline |
 | `resources` | defaults: 500m/512Mi limits, 100m/256Mi requests |
+| `kafka.clusters` | several Kafka clusters in one process (`KAFKA_CLUSTERS`); unique `name` + `bootstrapServers` per entry. The chart omits `KAFKA_CLUSTER_NAME` even if `kafka.clusterName` is also set. |
 
 `replicaCount` stays at 1 — there is no leader election, so >1 double-reports on push sinks
 (Datadog/OTLP). Full values reference: `https://klag.dev/deployment/kubernetes/`.

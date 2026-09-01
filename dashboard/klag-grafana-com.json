@@ -2284,7 +2284,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max(klag_topic_size_skew{topic=~\"$topic\"}) / 100 or vector(0)",
+          "expr": "max(klag_topic_size_skew{cluster_name=~\"$cluster_name\", topic=~\"$topic\"}) / 100 or vector(0)",
           "legendFormat": "Max size skew",
           "range": true
         }
@@ -2381,7 +2381,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "klag_topic_size_skew{topic=~\"$topic\"} / 100",
+          "expr": "klag_topic_size_skew{cluster_name=~\"$cluster_name\", topic=~\"$topic\"} / 100",
           "legendFormat": "__auto",
           "instant": true,
           "format": "table"
@@ -2505,7 +2505,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "klag_topic_size_skew{topic=~\"$topic\"} / 100",
+          "expr": "klag_topic_size_skew{cluster_name=~\"$cluster_name\", topic=~\"$topic\"} / 100",
           "legendFormat": "{{topic}}",
           "range": true
         }
@@ -2599,7 +2599,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (topic, partition) (klag_partition_log_end_offset{topic=~\"$topic\"} - klag_partition_log_start_offset{topic=~\"$topic\"})",
+          "expr": "max by (cluster_name, topic, partition) (klag_partition_log_end_offset{cluster_name=~\"$cluster_name\", topic=~\"$topic\"} - klag_partition_log_start_offset{cluster_name=~\"$cluster_name\", topic=~\"$topic\"})",
           "legendFormat": "{{topic}} [{{partition}}]",
           "range": true
         }

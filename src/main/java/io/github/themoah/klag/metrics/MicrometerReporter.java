@@ -75,6 +75,15 @@ public class MicrometerReporter {
     this.closeRegistryOnStop = closeRegistryOnStop;
   }
 
+  /** Configured {@code cluster_name}; blank when the cluster is unnamed. */
+  String clusterName() {
+    return clusterName;
+  }
+
+  private String clusterLog() {
+    return clusterName.isBlank() ? "" : " [cluster=" + clusterName + "]";
+  }
+
   /**
    * Reports lag metrics and tracks active gauge keys.
    *
@@ -460,12 +469,12 @@ public class MicrometerReporter {
   }
 
   public Future<Void> start() {
-    log.info("MicrometerReporter started");
+    log.info("MicrometerReporter started{}", clusterLog());
     return Future.succeededFuture();
   }
 
   public Future<Void> close() {
-    log.info("Closing MicrometerReporter");
+    log.info("Closing MicrometerReporter{}", clusterLog());
     for (String key : new HashSet<>(gauges.keySet())) {
       removeGauge(key);
     }

@@ -99,8 +99,7 @@ unreachable cluster does not take the Prometheus scrape target down. The JSON bo
 keeps a top-level `kafka` field (`connected` when any cluster is up) and a
 `clusters` array with per-cluster `kafka` status and `name` when the cluster is
 named. Increasing the probe `timeoutSeconds` does not give an in-flight Kafka check
-more time. Keep
-the probe roles separate. For slow startup, increase
+more time. Keep the probe roles separate. For slow startup, increase
 `readinessProbe.initialDelaySeconds` or `readinessProbe.failureThreshold`.
 Tune `kafka.requestTimeoutMs` and `app.healthCheckIntervalMs` when Kafka requests or
 health-state refreshes need different timing.

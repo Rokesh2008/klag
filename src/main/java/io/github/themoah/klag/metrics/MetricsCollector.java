@@ -105,6 +105,11 @@ public class MetricsCollector {
 
   private Long timerId;
 
+  private String clusterLog() {
+    String name = reporter.clusterName();
+    return name == null || name.isBlank() ? "" : " [cluster=" + name + "]";
+  }
+
   public MetricsCollector(
     Vertx vertx,
     KafkaClientService kafkaClient,
@@ -219,8 +224,8 @@ public class MetricsCollector {
    * Starts the metrics collector with periodic collection.
    */
   public Future<Void> start() {
-    log.info("Starting metrics collector with interval: {}ms, filter: {}, exclude: {}",
-      intervalMs, groupFilter.includeDescription(), groupFilter.excludeDescription());
+    log.info("Starting metrics collector{} with interval: {}ms, filter: {}, exclude: {}",
+      clusterLog(), intervalMs, groupFilter.includeDescription(), groupFilter.excludeDescription());
 
     // Start the periodic timer immediately and run the first cycle in the background so
     // HTTP (/healthz) can come up without waiting on a slow first scrape (#75).
@@ -229,15 +234,17 @@ public class MetricsCollector {
       .onSuccess(v -> {
         timerId = vertx.setPeriodic(intervalMs, id -> {
           if (collectionInFlight) {
-            log.warn("Skipping collection tick: previous cycle still running "
-              + "(METRICS_INTERVAL_MS={} may be too short for this cluster)", intervalMs);
+            log.warn("Skipping collection tick{}: previous cycle still running "
+              + "(METRICS_INTERVAL_MS={} may be too short for this cluster)",
+              clusterLog(), intervalMs);
             return;
           }
           collectAndReport();
         });
-        log.info("Metrics collector started, timer ID: {}", timerId);
+        log.info("Metrics collector started{}, timer ID: {}", clusterLog(), timerId);
         collectAndReport().onFailure(err ->
-          log.warn("Initial metrics collection failed (will retry on timer): {}", err.getMessage())
+          log.warn("Initial metrics collection failed{} (will retry on timer): {}",
+            clusterLog(), err.getMessage())
         );
       })
       .mapEmpty();
@@ -247,7 +254,7 @@ public class MetricsCollector {
    * Stops the metrics collector.
    */
   public Future<Void> stop() {
-    log.info("Stopping metrics collector");
+    log.info("Stopping metrics collector{}", clusterLog());
     if (timerId != null) {
       vertx.cancelTimer(timerId);
       timerId = null;
@@ -285,11 +292,12 @@ public class MetricsCollector {
 
         return collectAllGroupsParallel(filteredGroups);
       })
-      .onFailure(err -> log.error("Failed to collect lag metrics", err))
+      .onFailure(err -> log.error("Failed to collect lag metrics{}", clusterLog(), err))
       .onComplete(ar -> {
         collectionInFlight = false;
         long cycleMs = (System.nanoTime() - cycleStartNanos) / 1_000_000L;
-        log.info("Collection cycle finished in {}ms (success={})", cycleMs, ar.succeeded());
+        log.info("Collection cycle finished{} in {}ms (success={})",
+          clusterLog(), cycleMs, ar.succeeded());
       });
   }
 
@@ -364,8 +372,8 @@ public class MetricsCollector {
       })
       .recover(err -> {
         cycle.partial = true;
-        log.warn("Failed to process group chunk of {} groups (skipped this cycle): {}",
-          chunk.size(), err.getMessage());
+        log.warn("Failed to process group chunk of {} groups{} (skipped this cycle): {}",
+          chunk.size(), clusterLog(), err.getMessage());
         return Future.succeededFuture(null);
       });
   }
@@ -389,8 +397,9 @@ public class MetricsCollector {
    */
   private void finishCycle(CycleState cycle) {
     if (cycle.partial) {
-      log.warn("Collection cycle was partial (at least one chunk or group failed); "
-        + "keeping previous metrics and skipping stale cleanup until a full cycle succeeds");
+      log.warn("Collection cycle was partial{} (at least one chunk or group failed); "
+        + "keeping previous metrics and skipping stale cleanup until a full cycle succeeds",
+        clusterLog());
       if (cycle.snapshot != null && !cycle.snapshot.groups.isEmpty()) {
         publishSnapshot(cycle.snapshot);
       }
@@ -621,8 +630,8 @@ public class MetricsCollector {
           .map(groupId -> kafkaClient.getConsumerGroupOffsets(groupId)
             .recover(err -> {
               cycle.partial = true;
-              log.warn("Failed to collect lag for group {} (skipped this cycle): {}",
-                groupId, err.getMessage());
+              log.warn("Failed to collect lag for group {}{} (skipped this cycle): {}",
+                groupId, clusterLog(), err.getMessage());
               return Future.succeededFuture(null);
             }))
           .collect(Collectors.toList());
@@ -687,8 +696,9 @@ public class MetricsCollector {
       if (!gone.isEmpty()) {
         // Also covers topics the principal cannot see: with asymmetric ACLs (group offsets
         // readable, topic not) klag cannot tell that apart from deletion and retires the series.
-        log.info("Skipping {} topic(s) absent from the cluster topic list (deleted or not "
-          + "visible to this principal); their series are retired: {}", gone.size(), gone);
+        log.info("Skipping {} topic(s){} absent from the cluster topic list (deleted or not "
+          + "visible to this principal); their series are retired: {}",
+          gone.size(), clusterLog(), gone);
         missing.removeAll(gone);
       }
       if (missing.isEmpty()) {
