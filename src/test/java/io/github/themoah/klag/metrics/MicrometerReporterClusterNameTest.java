@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.github.themoah.klag.model.ConsumerGroupLag;
 import io.github.themoah.klag.model.ConsumerGroupLag.PartitionLag;
+import io.github.themoah.klag.model.TopicSizeSkew;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -46,6 +47,23 @@ class MicrometerReporterClusterNameTest {
     assertEquals(10.0, lagA.value());
     assertEquals(10.0, lagB.value());
     assertEquals(2, registry.find("klag.consumer.lag").gauges().size());
+  }
+
+  @Test
+  void topicSizeSkewGetsClusterNameOnSharedRegistry() {
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    MicrometerReporter a = new MicrometerReporter(registry, true, "msk-a", false);
+    MicrometerReporter b = new MicrometerReporter(registry, true, "msk-b", false);
+
+    a.reportTopicSizeSkew(List.of(new TopicSizeSkew("orders", 1.0)), null);
+    b.reportTopicSizeSkew(List.of(new TopicSizeSkew("orders", 2.0)), null);
+
+    Gauge skewA = registry.find("klag.topic.size_skew").tag("cluster_name", "msk-a").gauge();
+    Gauge skewB = registry.find("klag.topic.size_skew").tag("cluster_name", "msk-b").gauge();
+    assertNotNull(skewA);
+    assertNotNull(skewB);
+    assertEquals(100.0, skewA.value());
+    assertEquals(200.0, skewB.value());
   }
 
   @Test

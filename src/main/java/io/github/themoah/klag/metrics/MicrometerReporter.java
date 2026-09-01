@@ -333,7 +333,7 @@ public class MicrometerReporter {
 
   /**
    * Reports topic-level retained-size skew ({@code max/mean} of logEnd−logStart, scaled ×100).
-   * Tags are {@code topic} only.
+   * Tags are {@code topic} plus optional {@code cluster_name}.
    *
    * @param skews list of topic size-skew scores
    * @param activeKeys set to populate with active gauge keys (can be null)
@@ -342,7 +342,7 @@ public class MicrometerReporter {
     log.debug("Reporting {} topic size-skew metrics", skews.size());
 
     for (TopicSizeSkew skew : skews) {
-      Tags tags = Tags.of("topic", skew.topic());
+      Tags tags = metricTags("topic", skew.topic());
       long scaled = Math.round(skew.ratio() * 100);
       trackKey(activeKeys, recordGauge("klag.topic.size_skew", tags, scaled));
     }
