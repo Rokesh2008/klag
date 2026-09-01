@@ -43,7 +43,8 @@ Any `KAFKA_X_Y_Z` env var is lowercased and mapped to the AdminClient property
 `bootstrapServers` required; unique names). Helm: `kafka.clusters`. Do not run N
 Deployments for that. Kafka series carry `cluster_name`. `KAFKA_CLUSTER_NAME` tags a
 singleton and is ignored when `KAFKA_CLUSTERS` is set. Process `KAFKA_*` SASL/SSL are
-defaults; per-cluster `properties` overlay. MCP still sees the first cluster only.
+shared defaults (Helm: `kafka.existingSecret`). Do not put secrets in per-cluster
+`properties`. MCP still sees the first cluster only.
 `/readyz` is 200 if **any** cluster is up.
 
 File config layers under env vars:

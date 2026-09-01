@@ -60,11 +60,10 @@ kafka:
   clusterName: ""
   # Multiple clusters in one process. When non-empty, the chart
   # sets KAFKA_CLUSTERS to this list as JSON. Each entry needs a unique name.
-  # Shared SASL/SSL settings below still apply as defaults; overlay per cluster with
-  # properties (nested YAML is flattened to dotted AdminClient keys):
-  #   properties:
-  #     security:
-  #       protocol: SSL
+  # Shared SASL/SSL below apply to every cluster (kafka.existingSecret /
+  # saslJaasConfig). Distinct per-cluster credentials are not supported.
+  # Do not put sasl.jaas.config, ssl.*.password, or other secrets in
+  # clusters[].properties — Helm renders that list as plaintext KAFKA_CLUSTERS.
   # clusters:
   #   - name: msk-a
   #     bootstrapServers: "b-1.a.amazonaws.com:9092"

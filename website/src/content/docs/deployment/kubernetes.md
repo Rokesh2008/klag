@@ -112,7 +112,11 @@ memory for your group and partition count, then raise requests or limits before 
 ### Multiple Kafka clusters
 
 One process can scrape several Kafka clusters. Set `kafka.clusters` with a unique
-`name` and `bootstrapServers` per entry. Shared SASL/SSL values still apply as defaults.
+`name` and `bootstrapServers` per entry. Shared SASL/SSL still come from
+`kafka.existingSecret` (or `kafka.saslJaasConfig`) and apply to every cluster.
+Distinct per-cluster credentials are not supported. Do not put JAAS, SSL passwords,
+or other secrets in `clusters[].properties`: Helm renders `kafka.clusters` as the
+plaintext `KAFKA_CLUSTERS` env value.
 
 ```yaml
 kafka:

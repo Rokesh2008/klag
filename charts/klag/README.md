@@ -125,7 +125,7 @@ cheaper — Klag never builds the series.
 |-----------|-------------|---------|
 | `kafka.bootstrapServers` | Kafka bootstrap servers (comma-separated) | `localhost:9092` |
 | `kafka.clusterName` | Optional `cluster_name` metric tag for a single cluster | `""` |
-| `kafka.clusters` | List of `{name, bootstrapServers, ...}` scraped in one process; sets `KAFKA_CLUSTERS` | `[]` |
+| `kafka.clusters` | List of `{name, bootstrapServers, ...}` scraped in one process; sets `KAFKA_CLUSTERS`. Shared creds via `existingSecret`; do not put secrets in `clusters[].properties`. Distinct per-cluster credentials are not supported | `[]` |
 | `kafka.requestTimeoutMs` | Admin client request timeout | `30000` |
 | `kafka.securityProtocol` | Security protocol (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL) | `""` |
 | `kafka.saslMechanism` | SASL mechanism (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512) | `""` |
