@@ -24,8 +24,7 @@ no group remains after filtering. The collector starts one cycle immediately; ve
 and some derived metrics still need more samples.
 
 If Kafka is unreachable at startup, Klag **stays running (degraded)** instead of
-exiting — `/readyz` returns `503` until at least one cluster is connected and a
-cycle succeeds.
+exiting — `/readyz` returns `503` until at least one cluster is connected.
 This is intentional: the process tolerates a broker outage at boot like the health
 monitor, so a transient Kafka blip does not crash-loop the pod.
 
