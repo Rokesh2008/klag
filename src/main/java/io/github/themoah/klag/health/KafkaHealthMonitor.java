@@ -24,6 +24,9 @@ public class KafkaHealthMonitor {
 
   private Long timerId;
 
+  // Skip overlapping describeCluster calls during slow collection/network.
+  private boolean healthCheckInFlight;
+
   public KafkaHealthMonitor(Vertx vertx, KafkaClientService kafkaClient) {
     this(vertx, kafkaClient, DEFAULT_HEARTBEAT_INTERVAL_MS);
   }
@@ -38,17 +41,21 @@ public class KafkaHealthMonitor {
   /**
    * Starts the health monitor with initial check and periodic heartbeat.
    *
-   * @return Future that completes when initial health check finishes
+   * @return Future that completes when health monitor starts
    */
   public Future<Void> start() {
     log.info("Starting Kafka health monitor with heartbeat interval: {}ms", heartbeatIntervalMs);
 
-    return performHealthCheck()
-      .onComplete(ar -> {
-        timerId = vertx.setPeriodic(heartbeatIntervalMs, id -> performHealthCheck());
-        log.info("Kafka health monitor started, timer ID: {}", timerId);
-      })
-      .mapEmpty();
+    timerId = vertx.setPeriodic(heartbeatIntervalMs, id -> performHealthCheck());
+    log.info("Kafka health monitor started, timer ID: {}", timerId);
+
+    // Initial check runs in background so startup does not crash-loop when the broker
+    // is down at boot (#75). /readyz stays DOWN until describeCluster succeeds.
+    performHealthCheck().onFailure(err ->
+      log.warn("Initial Kafka health check failed (will retry on timer): {}", err.getMessage())
+    );
+
+    return Future.succeededFuture();
   }
 
   /**
@@ -88,6 +95,11 @@ public class KafkaHealthMonitor {
    * Performs a health check by describing cluster (lightweight metadata operation).
    */
   private Future<Void> performHealthCheck() {
+    if (healthCheckInFlight) {
+      log.debug("Skipping Kafka health check: previous check still running");
+      return Future.succeededFuture();
+    }
+    healthCheckInFlight = true;
     log.debug("Performing Kafka health check");
 
     return kafkaClient.describeCluster()
@@ -107,6 +119,7 @@ public class KafkaHealthMonitor {
           log.debug("Kafka health check failed: {}", err.getMessage());
         }
       })
+      .onComplete(ar -> healthCheckInFlight = false)
       .mapEmpty();
   }
 }
