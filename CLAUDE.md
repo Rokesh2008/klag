@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Klag is a Kafka Lag Exporter built with Vert.x 4.5.30. Monitors consumer lag and group states with Prometheus/Datadog/OTLP metrics.
+Klag is a Kafka Lag Exporter built with Vert.x 4.5.34. Monitors consumer lag and group states with Prometheus/Datadog/OTLP metrics.
 
 ## Build Commands
 
