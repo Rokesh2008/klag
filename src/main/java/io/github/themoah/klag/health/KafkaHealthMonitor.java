@@ -119,16 +119,12 @@ public class KafkaHealthMonitor {
    * Performs a health check by describing cluster (lightweight metadata operation).
    */
   private Future<Void> performHealthCheck() {
-<<<<<<< HEAD
     if (healthCheckInFlight) {
-      log.debug("Skipping Kafka health check: previous check still running");
+      log.debug("Skipping Kafka health check{}: previous check still running", clusterLog());
       return Future.succeededFuture();
     }
     healthCheckInFlight = true;
-    log.debug("Performing Kafka health check");
-=======
     log.debug("Performing Kafka health check{}", clusterLog());
->>>>>>> 1508c38 (fix: align dashboards, docs, and logs with cluster_name)
 
     return kafkaClient.describeCluster()
       .onSuccess(clusterId -> {
