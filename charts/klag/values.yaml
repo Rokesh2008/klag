@@ -232,9 +232,12 @@ extraVolumeMounts: []
 # Additional environment variables for the klag container (verbatim EnvVar entries).
 # Escape hatch for settings without first-class values: HOT_PARTITION_*, TIME_LAG_*,
 # KAFKA_CHUNK_*, KAFKA_MAX_CONCURRENT_GROUPS, LAG_TREND_DEADBAND_MSG_PER_SEC,
-# DATA_SKEW_ENABLED, DATA_SKEW_MIN_PARTITIONS, KLAG_CONFIG_FILE, LOG_LEVEL_KAFKA_CLIENT, ...
+# DATA_SKEW_ENABLED, DATA_SKEW_MIN_PARTITIONS, METRICS_ASSIGNED_TOPICS_ONLY,
+# KLAG_CONFIG_FILE, LOG_LEVEL_KAFKA_CLIENT, ...
 # Example:
 #   - name: DATA_SKEW_ENABLED
+#     value: "true"
+#   - name: METRICS_ASSIGNED_TOPICS_ONLY
 #     value: "true"
 #   - name: KAFKA_CHUNK_COUNT
 #     value: "4"

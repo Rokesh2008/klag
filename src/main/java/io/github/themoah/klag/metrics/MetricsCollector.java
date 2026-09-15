@@ -75,6 +75,7 @@ public class MetricsCollector {
   private final CommitFreshnessTracker commitFreshnessTracker;  // null when disabled
   private final boolean isrEnabled;
   private final DataSkewConfig dataSkewConfig;
+  private final boolean assignedTopicsOnly;
   private final ChunkConfig chunkConfig;
   private final int maxConcurrentGroups;
 
@@ -185,6 +186,7 @@ public class MetricsCollector {
       : null;
     this.isrEnabled = IsrConfig.fromEnvironment().enabled();
     this.dataSkewConfig = DataSkewConfig.fromEnvironment();
+    this.assignedTopicsOnly = AssignedTopicsConfig.fromEnvironment().enabled();
     this.chunkConfig = chunkConfig;
     this.maxConcurrentGroups = Math.max(1,
       Env.getInt(ENV_MAX_CONCURRENT_GROUPS, DEFAULT_MAX_CONCURRENT_GROUPS));
@@ -457,6 +459,10 @@ public class MetricsCollector {
       Map<String, ConsumerGroupState> stateData,
       CycleState cycle
   ) {
+    // Drop topics a Stable group has abandoned (commits linger until offsets.retention).
+    // Empty/rebalancing groups are left intact so outages stay visible (#92).
+    lagData = AssignedTopicsFilter.filter(lagData, stateData, assignedTopicsOnly);
+
     Set<String> activeKeys = cycle.activeKeys;
     Set<String> velocityKeys = cycle.velocityKeys;
     Set<String> throughputKeys = cycle.throughputKeys;
