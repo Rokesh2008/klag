@@ -86,6 +86,18 @@ Stale values beat deleted ones — but the freeze lasts as long as the failure d
 `METRICS_GROUP_EXCLUDE`. Cleanup resumes on the next complete cycle. The MCP snapshot is
 unaffected: it keeps publishing the groups that did succeed.
 
+## Lag keeps growing for a topic the group no longer consumes
+
+Committed offsets outlive an unsubscribe until `offsets.retention.minutes` (7 days by
+default). By default Klag still reports lag for those topics, so dashboards can show a
+group "falling behind" on a topic it has left.
+
+**Fix:** Set `METRICS_ASSIGNED_TOPICS_ONLY=true`. For Stable groups, Klag keeps only topics
+with at least one partition assigned to a member (from the same `describeConsumerGroups`
+call already used for group state). Empty and rebalancing groups are unchanged so a total
+consumer outage is not hidden. You can also delete the stale offsets with
+`kafka-consumer-groups.sh --bootstrap-server <host:port> --delete-offsets --group <group-id> --topic <abandoned-topic>`.
+
 ## A deleted topic's series stay, or a live topic's series disappear
 
 Klag filters each cycle's topic set against the cluster's topic list before requesting

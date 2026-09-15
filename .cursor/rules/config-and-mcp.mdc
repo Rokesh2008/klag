@@ -23,7 +23,7 @@ alwaysApply: false
 
 Any `KAFKA_X_Y_Z` env maps to `kafka.x.y.z` for AdminClient. Precedence: classpath props < external file < env.
 
-Feature toggles: `HOT_PARTITION_*`, `TIME_LAG_*`, `COMMIT_FRESHNESS_*`, `ISR_ENABLED`, `DATA_SKEW_ENABLED` (default false), `CONSUMER_MEMBER_LABELS_ENABLED`.
+Feature toggles: `HOT_PARTITION_*`, `TIME_LAG_*`, `COMMIT_FRESHNESS_*`, `ISR_ENABLED`, `DATA_SKEW_ENABLED` (default false), `METRICS_ASSIGNED_TOPICS_ONLY` (default false), `CONSUMER_MEMBER_LABELS_ENABLED`.
 
 ## MCP (opt-in)
 

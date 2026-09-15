@@ -237,7 +237,7 @@ Set `KLAG_CONFIG_FILE` to the path of an external `application.properties` (typi
 | `securityContext` | Container security context | no privilege escalation, read-only root FS, all capabilities dropped |
 | `extraVolumes` | Additional pod-level volumes (e.g., truststore PVC, certs Secret) | `[]` |
 | `extraVolumeMounts` | Additional container volume mounts; pair with `extraVolumes` | `[]` |
-| `extraEnv` | Additional environment variables (verbatim `EnvVar` entries) for settings without first-class values (`HOT_PARTITION_*`, `TIME_LAG_*`, `DATA_SKEW_ENABLED`, `KAFKA_CHUNK_*`, ...) | `[]` |
+| `extraEnv` | Additional environment variables (verbatim `EnvVar` entries) for settings without first-class values (`HOT_PARTITION_*`, `TIME_LAG_*`, `DATA_SKEW_ENABLED`, `METRICS_ASSIGNED_TOPICS_ONLY`, `KAFKA_CHUNK_*`, ...) | `[]` |
 | `extraEnvFrom` | Additional `envFrom` sources (ConfigMap/Secret refs) | `[]` |
 
 The pod always mounts an `emptyDir` at `/tmp` so the JVM and Netty work with the
