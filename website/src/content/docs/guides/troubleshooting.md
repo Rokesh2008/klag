@@ -96,7 +96,7 @@ group "falling behind" on a topic it has left.
 with at least one partition assigned to a member (from the same `describeConsumerGroups`
 call already used for group state). Empty and rebalancing groups are unchanged so a total
 consumer outage is not hidden. You can also delete the stale offsets with
-`kafka-consumer-groups.sh --delete-offsets`.
+`kafka-consumer-groups.sh --bootstrap-server <host:port> --delete-offsets --group <group-id> --topic <abandoned-topic>`.
 
 ## A deleted topic's series stay, or a live topic's series disappear
 
