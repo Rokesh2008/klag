@@ -6,7 +6,7 @@ code; this file is the short version plus the rules that are easy to violate.
 
 ## What this is
 
-**Klag** — a Kafka consumer lag exporter. Java 21 on Vert.x 4.5.30, Micrometer for metrics,
+**Klag** — a Kafka consumer lag exporter. Java 21 on Vert.x 4.5.34, Micrometer for metrics,
 Apache-2.0. It polls Kafka's AdminClient read-only and exports lag and derived signals to
 Prometheus, Datadog, or OTLP. Docs: https://klag.dev (machine-readable at
 https://klag.dev/llms.txt).

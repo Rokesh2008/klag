@@ -19,10 +19,10 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/starlight": "^0.41.4",
-    "astro": "^7.1.4",
+    "astro": "^7.2.8",
     "gray-matter": "^4.0.3",
-    "js-yaml": "^4.3.1",
-    "sharp": "^0.35.3"
+    "js-yaml": "^4.3.2",
+    "sharp": "^0.35.4"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -36,10 +36,11 @@
     "undici": "^7.28.0",
     "ws": "^8.20.1",
     "esbuild": "^0.28.1",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "nanoid": "^3.3.17",
     "postcss": "^8.5.23",
-    "svgo": "^4.0.2",
-    "fast-uri": "^3.1.5"
+    "svgo": "^4.1.0",
+    "fast-uri": "^3.1.6",
+    "sharp": "^0.35.4"
   }
 }

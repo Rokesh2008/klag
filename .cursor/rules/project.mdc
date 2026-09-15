@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Klag
 
-Kafka consumer lag exporter (Vert.x 4.5.30, Java 21). Monitors lag, velocity, hot partitions, time-based lag, commit freshness, ISR, topic data skew, and group state. Exports to Prometheus, Datadog, or OTLP.
+Kafka consumer lag exporter (Vert.x 4.5.34, Java 21). Monitors lag, velocity, hot partitions, time-based lag, commit freshness, ISR, topic data skew, and group state. Exports to Prometheus, Datadog, or OTLP.
 
 ## Build
 

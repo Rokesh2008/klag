@@ -29,7 +29,7 @@ configurations {
   }
 }
 
-val vertxVersion = "4.5.30"
+val vertxVersion = "4.5.34"
 val junitJupiterVersion = "5.9.1"
 val micrometerVersion = "1.16.6"
 

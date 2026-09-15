@@ -124,7 +124,7 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/VersionResponse" },
-                "example": { "version": "0.2.14", "vertxVersion": "4.5.30", "javaVersion": "21.0.9" }
+                "example": { "version": "0.2.14", "vertxVersion": "4.5.34", "javaVersion": "21.0.9" }
               }
             }
           }

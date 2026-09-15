@@ -238,7 +238,7 @@ End-to-end tests (k3d + real Kafka, Strimzi matrix) live in `scripts/`. See
 
 ---
 
-[![vert.x](https://img.shields.io/badge/vert.x-4.5.30-purple.svg)](https://vertx.io)
+[![vert.x](https://img.shields.io/badge/vert.x-4.5.34-purple.svg)](https://vertx.io)
 
 Some parts of the code were written with Claude
 <img src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/claude-color.png" width="56" height="56" alt="Claude">
