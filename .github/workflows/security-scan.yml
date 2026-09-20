@@ -1,18 +1,31 @@
 name: Security Scan
 
+# PR + manual by design: TruffleHog diffs against the default branch, so a push
+# trigger would scan ~nothing — the PR run is the meaningful one. Direct
+# pushes (hotfixes) are covered via workflow_dispatch: pass the pre-hotfix SHA
+# as `base` to scan everything landed since.
 on:
-  push:
-    branches:
-      - main
-      - dev
-    paths-ignore:
-      - 'website/**'
   pull_request:
     branches:
       - dev
       - main
     paths-ignore:
       - 'website/**'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Commit to diff from (e.g. the SHA before a directly-pushed hotfix). Defaults to the default branch tip.'
+        required: false
+        default: ''
+      head:
+        description: 'Commit to scan up to. Defaults to HEAD.'
+        required: false
+        default: 'HEAD'
+
+# New pushes cancel stale in-progress PR runs instead of stacking them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   trufflehog-scan:
@@ -26,12 +39,22 @@ jobs:
         with:
           fetch-depth: 0  # Fetch full history for --since-commit to work
 
+      - name: Resolve scan range
+        id: range
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.base }}" ]]; then
+            echo "base=${{ inputs.base }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${{ github.event.repository.default_branch }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "head=${{ inputs.head || 'HEAD' }}" >> "$GITHUB_OUTPUT"
+
       - name: TruffleHog OSS scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
+          base: ${{ steps.range.outputs.base }}
+          head: ${{ steps.range.outputs.head }}
           extra_args: --only-verified=false
         continue-on-error: true  # Always succeed, even if secrets found
 

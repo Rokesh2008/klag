@@ -6,7 +6,9 @@ name: E2E Strimzi (Helm + k3d)
 # Matrixed across the Kafka versions Strimzi supports.
 #
 # Triggers only on changes that can affect this test: app code, the chart, the
-# Strimzi e2e script, or this workflow.
+# Strimzi e2e script, or this workflow. PR-only by design: the merge to main
+# does not re-run what the PR already validated (use workflow_dispatch for an
+# on-demand run).
 
 on:
   pull_request:
@@ -17,16 +19,12 @@ on:
       - 'build.gradle.kts'
       - 'scripts/e2e-strimzi-test.sh'
       - '.github/workflows/e2e-strimzi.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'charts/**'
-      - 'src/**'
-      - 'Dockerfile'
-      - 'build.gradle.kts'
-      - 'scripts/e2e-strimzi-test.sh'
-      - '.github/workflows/e2e-strimzi.yml'
   workflow_dispatch:
+
+# New pushes cancel stale in-progress PR runs instead of stacking them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   strimzi:
