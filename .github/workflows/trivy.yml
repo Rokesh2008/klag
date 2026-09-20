@@ -1,16 +1,19 @@
 name: Trivy Security Scan
 
+# PR + weekly schedule by design: the merge to main does not re-run what the
+# PR already validated; the schedule covers supply-chain drift on main.
 on:
   pull_request:
     branches: [ main, dev ]
     paths-ignore:
       - 'website/**'
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'website/**'
   schedule:
     - cron: '0 6 * * 1' # weekly Monday 06:00 UTC
+
+# New pushes cancel stale in-progress PR runs instead of stacking them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   trivy-fs:
