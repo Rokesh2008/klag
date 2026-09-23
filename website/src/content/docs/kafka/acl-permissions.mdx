@@ -117,5 +117,64 @@ confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT \
   </TabItem>
 </Tabs>
 
+
+## Connect Klag to Confluent Cloud
+
+After creating the read-only ACLs above, configure Klag with the Confluent Cloud
+cluster endpoint and the service account API key pair.
+
+### Create credentials
+
+Create a service account and a Kafka API key scoped to the cluster:
+
+```bash
+confluent iam service-account create klag --description "Klag read-only monitoring"
+confluent iam service-account list
+
+confluent api-key create   --service-account <service-account-id>   --resource <cluster-id>
+```
+
+Save the API key and secret when they are created. The secret is not retrievable
+later.
+
+For the cluster endpoint, use the Endpoint value from
+`confluent kafka cluster describe <cluster-id>`.
+
+### Local or container deployment
+
+Klag uses the standard Kafka client settings for Confluent Cloud:
+
+```bash
+export KAFKA_BOOTSTRAP_SERVERS="<bootstrap-server>:9092"
+export KAFKA_SECURITY_PROTOCOL="SASL_SSL"
+export KAFKA_SASL_MECHANISM="PLAIN"
+export KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';"
+```
+
+The same settings can be placed in `application.properties` instead of
+environment variables.
+
+### Helm deployment
+
+For Kubernetes, keep the JAAS configuration in a Secret rather than putting the
+API secret in Helm values:
+
+```bash
+kubectl create secret generic klag-kafka-creds   --from-literal=jaas-config="org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';"
+
+helm upgrade --install klag klag/klag   --set kafka.bootstrapServers="<bootstrap-server>:9092"   --set kafka.securityProtocol="SASL_SSL"   --set kafka.saslMechanism="PLAIN"   --set kafka.existingSecret="klag-kafka-creds"   --set kafka.secretKeys.jaasConfig="jaas-config"
+```
+
+The chart maps `kafka.existingSecret` and `kafka.secretKeys.jaasConfig`
+to `KAFKA_SASL_JAAS_CONFIG`. See the
+[Kubernetes deployment guide](/deployment/kubernetes/) for other Secret and
+truststore options.
+
+:::caution
+Never commit a Confluent Cloud API secret to the repository or pass it in a
+shared values file. Use a Kubernetes Secret, environment-specific secret
+manager, or another secret store.
+:::
+
 If Klag logs authorization failures or `/readyz` returns `503`, work through the
 [readiness and ACL checks](/guides/troubleshooting/#readyz-returns-503).
