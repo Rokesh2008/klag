@@ -131,7 +131,9 @@ Create a service account and a Kafka API key scoped to the cluster:
 confluent iam service-account create klag --description "Klag read-only monitoring"
 confluent iam service-account list
 
-confluent api-key create   --service-account <service-account-id>   --resource <cluster-id>
+confluent api-key create \
+  --service-account <service-account-id> \
+  --resource <cluster-id>
 ```
 
 Save the API key and secret when they are created. The secret is not retrievable
@@ -160,9 +162,15 @@ For Kubernetes, keep the JAAS configuration in a Secret rather than putting the
 API secret in Helm values:
 
 ```bash
-kubectl create secret generic klag-kafka-creds   --from-literal=jaas-config="org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';"
+kubectl create secret generic klag-kafka-creds \
+  --from-literal=jaas-config="org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';"
 
-helm upgrade --install klag klag/klag   --set kafka.bootstrapServers="<bootstrap-server>:9092"   --set kafka.securityProtocol="SASL_SSL"   --set kafka.saslMechanism="PLAIN"   --set kafka.existingSecret="klag-kafka-creds"   --set kafka.secretKeys.jaasConfig="jaas-config"
+helm upgrade --install klag klag/klag \
+  --set kafka.bootstrapServers="<bootstrap-server>:9092" \
+  --set kafka.securityProtocol="SASL_SSL" \
+  --set kafka.saslMechanism="PLAIN" \
+  --set kafka.existingSecret="klag-kafka-creds" \
+  --set kafka.secretKeys.jaasConfig="jaas-config"
 ```
 
 The chart maps `kafka.existingSecret` and `kafka.secretKeys.jaasConfig`
