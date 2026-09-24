@@ -79,7 +79,11 @@ Create a service account with the following ACLs using the
 
 ```bash
 CLUSTER_ID=<your-cluster-id>
-SERVICE_ACCOUNT=<service-account-id>
+
+# Create the service account and capture its ID (skip this if you already
+# created one — see "Create credentials" below — and just reuse that ID)
+SERVICE_ACCOUNT=$(confluent iam service-account create klag \
+  --description "Klag read-only monitoring" -o json | jq -r .id)
 
 # Cluster permissions
 confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT \
@@ -99,7 +103,11 @@ confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT \
 
 ```bash
 CLUSTER_ID=<your-cluster-id>
-SERVICE_ACCOUNT=<service-account-id>
+
+# Create the service account and capture its ID (skip this if you already
+# created one — see "Create credentials" below — and just reuse that ID)
+SERVICE_ACCOUNT=$(confluent iam service-account create klag \
+  --description "Klag read-only monitoring" -o json | jq -r .id)
 
 # Cluster permissions (required for listConsumerGroups)
 confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT \
@@ -125,15 +133,14 @@ cluster endpoint and the service account API key pair.
 
 ### Create credentials
 
-Create a service account and a Kafka API key scoped to the cluster:
+Reuse the `$SERVICE_ACCOUNT` created in the ACL step above (or run
+`confluent iam service-account list` to look up its ID), then create a Kafka
+API key scoped to the cluster:
 
 ```bash
-confluent iam service-account create klag --description "Klag read-only monitoring"
-confluent iam service-account list
-
 confluent api-key create \
-  --service-account <service-account-id> \
-  --resource <cluster-id>
+  --service-account $SERVICE_ACCOUNT \
+  --resource $CLUSTER_ID
 ```
 
 Save the API key and secret when they are created. The secret is not retrievable
@@ -154,7 +161,14 @@ export KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLogin
 ```
 
 The same settings can be placed in `application.properties` instead of
-environment variables.
+environment variables, using the underlying Kafka client property names:
+
+```properties
+bootstrap.servers=<bootstrap-server>:9092
+security.protocol=SASL_SSL
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';
+```
 
 ### Helm deployment
 
@@ -162,8 +176,14 @@ For Kubernetes, keep the JAAS configuration in a Secret rather than putting the
 API secret in Helm values:
 
 ```bash
-kubectl create secret generic klag-kafka-creds \
-  --from-literal=jaas-config="org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';"
+# Avoid passing the secret directly on the command line (it would be visible
+# in shell history and process listings) — write it to a file first
+cat > jaas.conf <<'EOF'
+org.apache.kafka.common.security.plain.PlainLoginModule required username='<api-key>' password='<api-secret>';
+EOF
+
+kubectl create secret generic klag-kafka-creds --from-file=jaas-config=jaas.conf
+rm jaas.conf
 
 helm upgrade --install klag klag/klag \
   --set kafka.bootstrapServers="<bootstrap-server>:9092" \
